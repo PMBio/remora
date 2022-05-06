@@ -172,7 +172,7 @@ def call_read_mods(
             pos,
             probs,
             model_metadata["mod_bases"],
-            model_metadata["can_base"],
+            model_metadata["can_bases"],
         )
     return probs, labels, pos
 

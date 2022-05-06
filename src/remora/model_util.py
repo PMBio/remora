@@ -431,16 +431,16 @@ def load_onnx_model(model_filename, device=None, quiet=False):
             (mot, int(mot_off)) for mot, mot_off in zip(motifs, motif_offsets)
         ]
 
-    model_metadata["can_base"] = model_metadata["motifs"][0][0][
-        model_metadata["motifs"][0][1]
-    ]
+    
+    model_metadata["can_bases"] = "".join([model_metadata["motifs"][i][0][model_metadata["motifs"][i][1]]
+                                           for i in range(len(model_metadata["motifs"]))])
 
     # allowed settings for this attribute are a single motif or all-contexts
     # note that inference core methods use motifs attribute
     if len(model_metadata["motifs"]) == 1:
         model_metadata["motif"] = model_metadata["motifs"][0]
     else:
-        model_metadata["motif"] = (model_metadata["can_base"], 0)
+        model_metadata["motif"] = (model_metadata["can_bases"][0], 0)
 
     mod_str = "; ".join(
         f"{mod_b}={mln}"
@@ -450,7 +450,7 @@ def load_onnx_model(model_filename, device=None, quiet=False):
     )
     model_metadata["alphabet_str"] = (
         "loaded modified base model to call (alt to "
-        f"{model_metadata['can_base']}): {mod_str}"
+        f"{model_metadata['can_bases']}): {mod_str}"
     )
 
     if "refine_kmer_levels" in model_metadata:
