@@ -276,6 +276,9 @@ def format_mm_ml_tags(seq, poss, probs, mod_bases, can_bases):
         if mod_probs is None:
             continue
         for mod_prob, mod_base in zip(mod_probs, mod_bases):
+            if seq[pos] not in get_canonical_base(mod_base):
+                # When calling multiple motifs we only want to store the approriate calls
+                continue
             mod_prob = mod_prob
             per_mod_probs[mod_base].append((pos, mod_prob))
     
@@ -287,9 +290,10 @@ def format_mm_ml_tags(seq, poss, probs, mod_bases, can_bases):
         if len(pos_probs) == 0:
             continue
         mod_poss, probs = zip(*sorted(pos_probs))
+        motif_idx = [1 if b in can_base else 0 for b in seq]
         # compute modified base positions relative to the running total of the
         # associated canonical base
-        can_base_mod_poss = np.cumsum([1 if b in can_base else 0 for b in seq])[np.array(mod_poss)] - 1
+        can_base_mod_poss = np.cumsum(motif_idx)[np.array(mod_poss)] - 1
         mm_tag += "{}+{}{};".format(
             can_base,
             mod_base,
