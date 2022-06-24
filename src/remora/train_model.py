@@ -1,14 +1,22 @@
 import os
 import atexit
 from shutil import copyfile
+from pathlib import Path
 
 import torch
 import numpy as np
 from tqdm import tqdm
 from thop import profile
 
+# Optionally load tensorboard
+import importlib
+TENSORBOARD = importlib.util.find_spec("torch.utils.tensorboard") is not None
+if TENSORBOARD:
+    from torch.utils.tensorboard import SummaryWriter
+
 from remora.data_chunks import RemoraDataset
 from remora import constants, util, log, RemoraError, encoded_kmers, model_util
+
 
 LOGGER = log.get_logger()
 BREACH_THRESHOLD = 0.8
@@ -109,6 +117,10 @@ def train_model(
         else seed
     )
     LOGGER.info(f"Seed selected is {seed}")
+    
+    if TENSORBOARD:
+        LOGGER.info("Logging using tensorboard enabled")
+        tensorboard = SummaryWriter(Path(out_path).joinpath("tensorboard_logs"))
 
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -259,6 +271,7 @@ def train_model(
         loss_val=f"{val_metrics.loss:.6f}",
         loss_train=f"{trn_metrics.loss:.6f}",
     )
+    
     atexit.register(pbar.close)
     atexit.register(ebar.close)
 
@@ -407,6 +420,13 @@ def train_model(
             loss_val=f"{val_metrics.loss:.6f}",
             loss_train=f"{trn_metrics.loss:.6f}",
         )
+
+        if TENSORBOARD:
+            tensorboard.add_scalar("Accuracy/Validation", val_metrics.acc, epoch)
+            tensorboard.add_scalar("Accuracy/Train", trn_metrics.acc, epoch)
+            tensorboard.add_scalar("Loss/Validation", val_metrics.loss, epoch)
+            tensorboard.add_scalar("Loss/Train", trn_metrics.loss, epoch)
+            
         ebar.update()
         if early_stopping and early_stop_epochs >= early_stopping:
             LOGGER.info(
